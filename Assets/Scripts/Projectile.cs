@@ -3,13 +3,14 @@ using UnityEngine;
 
 /// Mueve el proyectil hacia adelante (transform.up) usando rb.linearVelocity en
 /// FixedUpdate. Se destruye tras 'lifetime' segundos o al entrar en trigger con
-/// un objeto etiquetado "Enemy". Incluye fade-out por corrutina como feedback visual.
+/// un objeto etiquetado "Enemy". Al impactar llama a EnemyHealth.TakeDamage().
 /// El Rigidbody2D debe ser Dynamic con Gravity Scale = 0.
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(SpriteRenderer))]
 public class Projectile : MonoBehaviour
 {
     [SerializeField] private float speed = 12f;
+    [SerializeField] private float damage = 1f;
     [SerializeField] private float lifetime = 5f;
     [SerializeField] private float fadeOutDuration = 0.08f;
 
@@ -40,8 +41,11 @@ public class Projectile : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Enemy"))
-            StartCoroutine(DestroyRoutine());
+        if (!other.CompareTag("Enemy")) return;
+
+        // Transmitimos el daño al enemigo antes de destruirnos.
+        other.GetComponent<EnemyHealth>()?.TakeDamage(damage);
+        StartCoroutine(DestroyRoutine());
     }
 
     private IEnumerator LifetimeRoutine()

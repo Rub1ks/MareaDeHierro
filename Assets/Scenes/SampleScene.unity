@@ -136,7 +136,7 @@ GameObject:
   - component: {fileID: 64818461}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -190,7 +190,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -4946441494630669851, guid: fc18d8ef2df99bb4c985c94a9f4a7685, type: 3}
+  m_Sprite: {fileID: 4711374544223704480, guid: 3e111bf91d7c47f49a80b54970676551, type: 3}
   m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -313,7 +313,7 @@ PolygonCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1.08, y: 2.33}
+    oldSize: {x: 10.32, y: 23.827913}
     newSize: {x: 1.08, y: 2.33}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -321,10 +321,13 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: -0.53999996, y: 1.165}
-      - {x: -0.53999996, y: -1.165}
-      - {x: 0.53999996, y: -1.165}
-      - {x: 0.53999996, y: 1.165}
+    - - {x: 0.40856266, y: 12.145456}
+      - {x: -5.3586035, y: 12.086166}
+      - {x: -5.2363377, y: 1.7919502}
+      - {x: -5.1888704, y: -11.793414}
+      - {x: -0.51830435, y: -12.112139}
+      - {x: 5.4284506, y: -11.813293}
+      - {x: 4.999263, y: 11.793411}
   m_UseDelaunayMesh: 1
 --- !u!50 &64818465
 Rigidbody2D:
@@ -459,7 +462,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 50
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
