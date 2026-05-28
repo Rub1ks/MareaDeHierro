@@ -82,6 +82,10 @@ public class EnemyHealth : MonoBehaviour
             yield return null;
         }
 
+        // Notificamos al WaveManager antes de destruirnos para que
+        // pueda llevar la cuenta de cuántos enemigos quedan vivos.
+        WaveManager.Instance?.RegisterEnemyDefeated();
+
         Destroy(gameObject);
     }
 }
