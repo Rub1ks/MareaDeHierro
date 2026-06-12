@@ -67,6 +67,11 @@ public class WaveManager : MonoBehaviour
     [Header("Puntos de Aparición")]
     [SerializeField] private Transform[] spawnPoints;
 
+    [Header("Objetivo")]
+    [Tooltip("El fuerte hacia el que miran los barcos al aparecer. " +
+             "Si se deja vacío, se busca automáticamente por tag 'Player'.")]
+    [SerializeField] private Transform target;
+
     // ── Estado interno (se ve en Inspector en Play Mode) ─────────────────────
     [Header("Estado — solo lectura en Play Mode")]
     [SerializeField] private int  _currentWaveIndex = 0;
@@ -102,6 +107,18 @@ public class WaveManager : MonoBehaviour
         {
             Debug.LogWarning("[WaveManager] No hay SpawnPoints asignados.");
             return;
+        }
+
+        // Mismo fallback que EnemyMovement: si el diseñador no asigna el
+        // objetivo en el Inspector, lo buscamos por tag "Player".
+        if (target == null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+                target = player.transform;
+            else
+                Debug.LogWarning("[WaveManager] No se encontró el objetivo (tag 'Player'). " +
+                                 "Los barcos aparecerán sin orientar.");
         }
 
         StartCoroutine(WaveSequenceRoutine());
@@ -176,7 +193,19 @@ public class WaveManager : MonoBehaviour
     private void SpawnEnemy(GameObject prefab)
     {
         Transform point = spawnPoints[Random.Range(0, spawnPoints.Length)];
-        Instantiate(prefab, point.position, Quaternion.identity);
+        Instantiate(prefab, point.position, AimAtTarget(point.position));
+    }
+
+    /// Rotación que orienta la proa hacia el objetivo. Los sprites de los
+    /// barcos están dibujados apuntando a la derecha (+X), por lo que el
+    /// ángulo de Atan2 se usa directo, sin offset.
+    private Quaternion AimAtTarget(Vector3 from)
+    {
+        if (target == null) return Quaternion.identity;
+
+        Vector2 dir   = (Vector2)(target.position - from);
+        float   angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        return Quaternion.Euler(0f, 0f, angle);
     }
 
     /// Mezcla todos los grupos en una sola lista plana (Fisher-Yates).

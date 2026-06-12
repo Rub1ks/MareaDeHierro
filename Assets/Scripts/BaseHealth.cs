@@ -29,7 +29,7 @@ public class BaseHealth : MonoBehaviour
     [SerializeField] private Slider healthSlider;
 
     [Header("Feedback Visual")]
-    [SerializeField] private Color  hitColor       = new Color(1f, 0.2f, 0.2f);
+    [SerializeField] private Color  hitColor       = Color.red;
     [SerializeField] private float  flashDuration  = 0.15f;
 
     // ── Estado interno ───────────────────────────────────────────────────────
@@ -88,10 +88,12 @@ public class BaseHealth : MonoBehaviour
     // ── Corrutinas ───────────────────────────────────────────────────────────
 
     /// Parpadeo rojo para indicar que la base recibió daño.
+    /// Tiempo no escalado: el flash dura lo mismo aunque timeScale cambie
+    /// (pausa o cámara lenta del Game Over).
     private IEnumerator HitFlashRoutine()
     {
         _sr.color = hitColor;
-        yield return new WaitForSeconds(flashDuration);
+        yield return new WaitForSecondsRealtime(flashDuration);
         if (!_isDead) _sr.color = _originalColor;
     }
 

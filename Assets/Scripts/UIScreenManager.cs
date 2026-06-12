@@ -100,8 +100,11 @@ public class UIScreenManager : MonoBehaviour
 
     // ── Métodos de los botones (asígnalos en el Inspector de cada botón) ──────
 
-    /// Botón "Reintentar" (Game Over y Victoria).
+    /// Botón "Volver a jugar" (Game Over y Victoria).
     public void OnRestartPressed()   => GameManager.Instance.RestartGame();
+
+    /// Botón "Menú Principal" (Game Over y Victoria).
+    public void OnMainMenuPressed()  => GameManager.Instance.GoToMainMenu();
 
     /// Botón "Salir" (todos los paneles).
     public void OnQuitPressed()      => GameManager.Instance.QuitGame();

@@ -42,8 +42,20 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
-  - name: Background
+  - name: Mar
     uniqueID: 951065557
+    locked: 0
+  - name: Unidades
+    uniqueID: 1554717483
+    locked: 0
+  - name: Fuerte
+    uniqueID: 1178926303
+    locked: 0
+  - name: Canon
+    uniqueID: 2012522219
+    locked: 0
+  - name: Proyectiles
+    uniqueID: 3339362759
     locked: 0
   m_RenderingLayers:
   - Default

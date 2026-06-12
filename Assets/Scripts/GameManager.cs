@@ -42,6 +42,10 @@ public class GameManager : MonoBehaviour
     [Tooltip("Escala de tiempo mínima durante la cámara lenta (0 = parada total).")]
     [SerializeField][Range(0f, 0.5f)] private float slowMoTargetScale = 0f;
 
+    [Header("Escenas")]
+    [Tooltip("Índice de la escena del menú principal en Build Settings.")]
+    [SerializeField] private int menuSceneIndex = 0;
+
     // ── Estado ───────────────────────────────────────────────────────────────
     public GameState CurrentState { get; private set; } = GameState.Playing;
 
@@ -104,6 +108,14 @@ public class GameManager : MonoBehaviour
     {
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    /// Vuelve al menú principal. Restaura el tiempo antes de cargar:
+    /// en Victoria/Game Over el timeScale quedó en 0 (o casi 0).
+    public void GoToMainMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(menuSceneIndex);
     }
 
     /// Cierra la aplicación.

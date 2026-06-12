@@ -1,46 +1,38 @@
 using System.Collections;
-using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 // ---------------------------------------------------------------------------
-// MainMenuManager — Controla la pantalla de menú principal.
+// MainMenuManager — Controla la pantalla de menú principal (MenuScene).
 //
-// Paneles:
-//   · mainPanel        — Contiene los botones Jugar / Instrucciones / Salir
-//   · instruccionesPanel — Explica los controles del juego
+// Estrategia "hotspot": los textos JUGAR / INSTRUCCIONES / SALIR / VOLVER ya
+// vienen dibujados en las imágenes de fondo (1920x1080). Encima de cada texto
+// se coloca un Button de Unity con su Image en alpha 0: invisible pero
+// cliqueable (la Image sigue siendo Raycast Target aunque no se vea).
 //
-// Animaciones:
-//   · Título flota suavemente en Y
-//   · Fade-in al entrar, fade-out al cargar la partida
+// Paneles (cada uno con su CanvasGroup):
+//   · mainPanel          — Fondo del menú con JUGAR / INSTRUCCIONES / SALIR
+//   · instruccionesPanel — Fondo de instrucciones con VOLVER
+//
+// El cambio de panel se hace con alpha + interactable + blocksRaycasts del
+// CanvasGroup. blocksRaycasts = false es CLAVE: garantiza que el panel oculto
+// nunca intercepte los clics destinados a los botones del panel visible.
 // ---------------------------------------------------------------------------
 public class MainMenuManager : MonoBehaviour
 {
     // ── Paneles ──────────────────────────────────────────────────────────────
-    [Header("Paneles (arrastrar desde la Hierarchy)")]
-    [SerializeField] private GameObject mainPanel;
-    [SerializeField] private GameObject instruccionesPanel;
-
-    // ── Título animado ────────────────────────────────────────────────────────
-    [Header("Título")]
-    [SerializeField] private TextMeshProUGUI titleText;
-
-    // ── CanvasGroups para fades ───────────────────────────────────────────────
-    [Header("CanvasGroups — uno por panel")]
-    [SerializeField] private CanvasGroup mainCG;
-    [SerializeField] private CanvasGroup instruccionesCG;
+    [Header("Paneles (arrastrar los CanvasGroup desde la Hierarchy)")]
+    [SerializeField] private CanvasGroup mainPanel;
+    [SerializeField] private CanvasGroup instruccionesPanel;
 
     // ── Configuración ─────────────────────────────────────────────────────────
     [Header("Configuración")]
-    [Tooltip("Nombre EXACTO de la escena de juego (tal como aparece en Build Settings).")]
-    [SerializeField] private string gameSceneName = "MainScene";
+    [Tooltip("Índice de la escena de juego en Build Settings (Menú = 0, Juego = 1).")]
+    [SerializeField] private int gameSceneIndex = 1;
 
-    [SerializeField] private float fadeInDuration  = 0.6f;
-    [SerializeField] private float titleFloatSpeed = 1.2f;
-    [SerializeField] private float titleFloatAmount = 6f;
+    [SerializeField] private float fadeDuration = 0.35f;
 
-    private Vector3 _titleBasePos;
+    private bool _isLoading;
 
     // ── Ciclo de vida ─────────────────────────────────────────────────────────
 
@@ -49,44 +41,33 @@ public class MainMenuManager : MonoBehaviour
         // Nos aseguramos de que el tiempo corra (puede venir de una partida pausada).
         Time.timeScale = 1f;
 
-        if (instruccionesPanel != null)
-            instruccionesPanel.SetActive(false);
-
-        if (mainPanel != null)
-            mainPanel.SetActive(true);
-
-        if (titleText != null)
-            _titleBasePos = titleText.transform.localPosition;
-
-        StartCoroutine(FadeInRoutine(mainCG, fadeInDuration));
-        StartCoroutine(FloatTitleRoutine());
+        HideInstantly(instruccionesPanel);
+        StartCoroutine(FadeRoutine(mainPanel, 0f, 1f, fadeDuration));
     }
 
-    // ── Botones del menú principal ────────────────────────────────────────────
+    // ── Métodos de los botones (asígnalos en el OnClick de cada botón) ────────
 
-    /// Botón "JUGAR" — carga la escena de juego con fade-out.
+    /// Botón "JUGAR" — fade-out del menú y carga de la escena de juego.
     public void OnJugarPressed()
     {
-        StartCoroutine(LoadSceneWithFade(gameSceneName));
+        if (_isLoading) return;   // Evita dobles clics mientras carga.
+        _isLoading = true;
+        StartCoroutine(LoadGameRoutine());
     }
 
-    /// Botón "INSTRUCCIONES" — muestra el panel de controles.
+    /// Botón "INSTRUCCIONES" — transición del panel principal al de instrucciones.
     public void OnInstruccionesPressed()
     {
-        if (mainPanel != null)         mainPanel.SetActive(false);
-        if (instruccionesPanel != null) instruccionesPanel.SetActive(true);
-        StartCoroutine(FadeInRoutine(instruccionesCG, 0.3f));
+        StartCoroutine(SwapPanelsRoutine(mainPanel, instruccionesPanel));
     }
 
-    /// Botón "VOLVER" dentro del panel de instrucciones.
+    /// Botón "VOLVER" — transición del panel de instrucciones al principal.
     public void OnVolverPressed()
     {
-        if (instruccionesPanel != null) instruccionesPanel.SetActive(false);
-        if (mainPanel != null)          mainPanel.SetActive(true);
-        StartCoroutine(FadeInRoutine(mainCG, 0.3f));
+        StartCoroutine(SwapPanelsRoutine(instruccionesPanel, mainPanel));
     }
 
-    /// Botón "SALIR" — cierra la aplicación.
+    /// Botón "SALIR" — cierra la aplicación (detiene el Play Mode en el editor).
     public void OnSalirPressed()
     {
         Debug.Log("[MainMenuManager] Saliendo del juego.");
@@ -97,61 +78,56 @@ public class MainMenuManager : MonoBehaviour
 #endif
     }
 
-    // ── Corrutinas de animación ───────────────────────────────────────────────
+    // ── Helpers de visibilidad ────────────────────────────────────────────────
 
-    /// El título flota suavemente arriba y abajo de forma continua.
-    private IEnumerator FloatTitleRoutine()
+    /// Oculta un panel de golpe, sin animación.
+    private static void HideInstantly(CanvasGroup cg)
     {
-        if (titleText == null) yield break;
-
-        while (true)
-        {
-            float offsetY = Mathf.Sin(Time.time * titleFloatSpeed) * titleFloatAmount;
-            titleText.transform.localPosition = _titleBasePos + new Vector3(0f, offsetY, 0f);
-            yield return null;
-        }
+        if (cg == null) return;
+        cg.alpha          = 0f;
+        cg.interactable   = false;
+        cg.blocksRaycasts = false;
     }
 
-    /// Fade-in del alpha de 0 → 1.
-    private IEnumerator FadeInRoutine(CanvasGroup cg, float duration)
+    // ── Corrutinas ────────────────────────────────────────────────────────────
+
+    /// Cross-fade entre paneles: oculta 'from' y luego muestra 'to'.
+    private IEnumerator SwapPanelsRoutine(CanvasGroup from, CanvasGroup to)
+    {
+        yield return FadeRoutine(from, 1f, 0f, fadeDuration);
+        yield return FadeRoutine(to,   0f, 1f, fadeDuration);
+    }
+
+    /// Anima el alpha del CanvasGroup y sincroniza interactable/blocksRaycasts.
+    private IEnumerator FadeRoutine(CanvasGroup cg, float fromAlpha, float toAlpha, float duration)
     {
         if (cg == null) yield break;
 
-        cg.alpha = 0f;
+        bool visibleAlFinal = toAlpha > 0.5f;
+
+        // Durante la animación nadie puede hacer clic (evita clics a mitad de fade).
+        cg.interactable   = false;
+        cg.blocksRaycasts = false;
+
+        cg.alpha = fromAlpha;
         float elapsed = 0f;
 
         while (elapsed < duration)
         {
-            elapsed  += Time.unscaledDeltaTime;
-            cg.alpha  = Mathf.Clamp01(elapsed / duration);
+            elapsed += Time.unscaledDeltaTime;
+            cg.alpha = Mathf.Lerp(fromAlpha, toAlpha, Mathf.Clamp01(elapsed / duration));
             yield return null;
         }
 
-        cg.alpha = 1f;
+        cg.alpha          = toAlpha;
+        cg.interactable   = visibleAlFinal;
+        cg.blocksRaycasts = visibleAlFinal;
     }
 
-    /// Fade-out del alpha de 1 → 0.
-    private IEnumerator FadeOutRoutine(CanvasGroup cg, float duration)
+    /// Fade-out del menú y carga de la escena de juego por índice de Build Settings.
+    private IEnumerator LoadGameRoutine()
     {
-        if (cg == null) yield break;
-
-        cg.alpha = 1f;
-        float elapsed = 0f;
-
-        while (elapsed < duration)
-        {
-            elapsed  += Time.unscaledDeltaTime;
-            cg.alpha  = 1f - Mathf.Clamp01(elapsed / duration);
-            yield return null;
-        }
-
-        cg.alpha = 0f;
-    }
-
-    /// Hace fade-out del panel principal y carga la escena indicada.
-    private IEnumerator LoadSceneWithFade(string sceneName)
-    {
-        yield return StartCoroutine(FadeOutRoutine(mainCG, 0.4f));
-        SceneManager.LoadScene(sceneName);
+        yield return FadeRoutine(mainPanel, 1f, 0f, fadeDuration);
+        SceneManager.LoadScene(gameSceneIndex);
     }
 }
